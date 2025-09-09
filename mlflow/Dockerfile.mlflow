@@ -1,0 +1,12 @@
+FROM python:3.10-slim
+
+# Install system dependencies for psycopg2
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc libpq-dev curl && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install MLflow and required libraries
+RUN pip install --no-cache-dir mlflow psycopg2-binary boto3
+
+# Default command (overridden in docker-compose.yml)
+CMD ["mlflow", "server"]
