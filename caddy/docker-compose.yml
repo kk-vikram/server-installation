@@ -12,7 +12,14 @@ services:
       - ./site:/usr/share/caddy
       - caddy_data:/data
       - caddy_config:/config
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/ || exit 1"]
+      interval: 30s        # how often to run the check
+      timeout: 10s         # how long to wait before considering it failed
+      retries: 3           # how many failures before "unhealthy"
+      start_period: 10s    # grace period before checking (let Caddy boot)
 
 volumes:
   caddy_data:
   caddy_config:
+
