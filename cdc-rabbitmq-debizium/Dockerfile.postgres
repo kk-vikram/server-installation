@@ -1,0 +1,19 @@
+FROM postgres:13
+
+# Install dependencies and compile wal2json
+RUN apt-get update && apt-get install -y \
+    git \
+    gcc \
+    make \
+    postgresql-server-dev-13 \
+    && git clone https://github.com/eulerto/wal2json.git /tmp/wal2json \
+    && cd /tmp/wal2json \
+    && USE_PGXS=1 make \
+    && mv wal2json.so /usr/lib/postgresql/13/lib/ \
+    && rm -rf /tmp/wal2json \
+    && apt-get remove -y git gcc make postgresql-server-dev-13 \
+    && apt-get autoremove -y \
+    && apt-get clean
+
+# Ensure proper permissions
+RUN chown postgres:postgres /usr/lib/postgresql/13/lib/wal2json.so

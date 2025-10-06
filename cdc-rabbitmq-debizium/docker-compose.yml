@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  cdc-consumer:
+    container_name: cdc_consumer
+    build:
+      context: .
+      dockerfile: Dockerfile.consumer
+    restart: unless-stopped
+    environment:
+      # PostgreSQL/TimescaleDB connection
+      PG_HOST: 192.168.1.204       # Your DB server IP
+      PG_PORT: 5432                # Default Postgres port
+      PG_DB: acwa              # Your database name
+      PG_USER: bharath             # DB username
+      PG_PASS: bharath123             # DB password
+      SLOT_NAME: acwa     # Logical replication slot name
+
+      # RabbitMQ connection
+      RMQ_HOST: 192.168.1.200      # Your RabbitMQ server IP
+      RMQ_PORT: 5672
+      RMQ_USER: admin
+      RMQ_PASS: admin
+      QUEUE: dbserver1.public.customers  # Queue name to publish events
