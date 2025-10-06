@@ -1,0 +1,72 @@
+version: '3.8'
+
+networks:
+  app_net:
+    driver: bridge
+
+volumes:
+  rabbitmq_data:
+  postgres_data:
+
+services:
+  rabbitmq:
+    container_name: cdc_rabbitmq_server
+    image: rabbitmq:3.12-management  # Explicit version
+    restart: unless-stopped          # Restart policy
+    ports:
+      - 5672:5672  # AMQP port
+      - 15672:15672  # Management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - app_net
+
+  postgres:
+    container_name: cdc_postgres_db
+    build:
+      context: .
+      dockerfile: Dockerfile.postgres
+    restart: unless-stopped          # Restart policy
+    ports:
+      - 5433:5432
+    environment:
+      POSTGRES_DB: inventory
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    command: >
+      postgres
+      -c wal_level=logical
+      -c max_replication_slots=10
+      -c max_wal_senders=10
+      -c shared_preload_libraries=wal2json
+    volumes:
+      - postgres_data:/var/lib/postgresql/data  # Named volume for persistence
+      - ./postgres-init.sql:/docker-entrypoint-initdb.d/postgres-init.sql
+    networks:
+      - app_net
+
+  cdc-consumer:
+    container_name: cdc_consumer
+    build:
+      context: .
+      dockerfile: Dockerfile.consumer
+    restart: unless-stopped          # Restart policy
+    depends_on:
+      - postgres
+      - rabbitmq
+    environment:
+      PG_HOST: postgres
+      PG_PORT: 5432
+      PG_DB: inventory
+      PG_USER: postgres
+      PG_PASS: postgres
+      RMQ_HOST: rabbitmq
+      RMQ_PORT: 5672
+      RMQ_USER: guest
+      RMQ_PASS: guest
+      QUEUE: dbserver1.public.customers
+    networks:
+      - app_net
